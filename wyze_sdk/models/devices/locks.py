@@ -61,15 +61,15 @@ class LockProps(object):
 
     @classmethod
     def auto_lock_time(cls) -> PropDef:
-        return PropDef("auto_lock_time", int, acceptable_values=range(0, 7))
+        return PropDef("auto_lock_time", int, acceptable_values=range(7))
 
     @classmethod
     def left_open_time(cls) -> PropDef:
-        return PropDef("left_open_time", int, acceptable_values=range(0, 7))
+        return PropDef("left_open_time", int, acceptable_values=range(7))
 
     @classmethod
     def open_volume(cls) -> PropDef:
-        return PropDef("open_volume", int, acceptable_values=range(0, 100))
+        return PropDef("open_volume", int, acceptable_values=range(100))
 
     @classmethod
     def keypad_enable_status(cls) -> PropDef:
@@ -151,10 +151,7 @@ class LockEventSource(Enum):
 
     def __init__(self, description: str, codes: Union[int, Sequence[int]]):
         self.description = description
-        if isinstance(codes, (list, Tuple)):
-            self.codes = codes
-        else:
-            self.codes = [codes]
+        self.codes = codes if isinstance(codes, (list, Tuple)) else [codes]
 
     def describe(self):
         return self.description
@@ -379,24 +376,26 @@ class LockRecordDetail(JsonObject):
         audio_played: int = None,
         **others: dict
     ):
-        self.id = id if id else self._extract_attribute('id', others)
-        self.avatar = avatar if avatar else self._extract_attribute('avatar', others)
-        self.email = email if email else self._extract_attribute('email', others)
+        self.id = id or self._extract_attribute('id', others)
+        self.avatar = avatar or self._extract_attribute('avatar', others)
+        self.email = email or self._extract_attribute('email', others)
         if isinstance(left_open_time, LockLeftOpenTime):
             self.left_open_time = left_open_time
         else:
             self.left_open_time = LockLeftOpenTime.parse(left_open_time if left_open_time is not None else self._extract_attribute('left_open_time', others))
-        self.receiver_name = receiver_name if receiver_name else self._extract_attribute('receiver_name', others)
-        self.role = role if role else self._extract_attribute('role', others)
-        self.sender_name = sender_name if sender_name else self._extract_attribute('sender_name', others)
+        self.receiver_name = receiver_name or self._extract_attribute('receiver_name', others)
+
+        self.role = role or self._extract_attribute('role', others)
+        self.sender_name = sender_name or self._extract_attribute('sender_name', others)
         if isinstance(source, LockEventSource):
             self.source = source
         else:
             self.source = LockEventSource.parse(source if source is not None else self._extract_attribute('source', others))
-        self.source_name = source_name if source_name else self._extract_attribute('source_name', others)
-        self.sourceid = sourceid if sourceid else self._extract_attribute('sourceid', others)
-        self.time = time if time else epoch_to_datetime(self._extract_attribute('time', others), ms=True)
-        self.audio_played = audio_played if audio_played else self._extract_attribute('audio_played', others)
+        self.source_name = source_name or self._extract_attribute('source_name', others)
+        self.sourceid = sourceid or self._extract_attribute('sourceid', others)
+        self.time = time or epoch_to_datetime(self._extract_attribute('time', others), ms=True)
+        self.audio_played = audio_played or self._extract_attribute('audio_played', others)
+
         show_unknown_key_warning(self, others)
 
 
@@ -436,7 +435,7 @@ class LockKeyPermission(JsonObject):
 
     def to_json(self):
         to_return = {'status': self.type.to_json()}
-        if self.type == LockKeyPermissionType.DURATION or self.type == LockKeyPermissionType.ONCE:
+        if self.type in [LockKeyPermissionType.DURATION, LockKeyPermissionType.ONCE]:
             if self.begin is not None:
                 to_return['begin'] = int(self.begin.replace(microsecond=0).timestamp())
             if self.end is not None:
@@ -540,8 +539,8 @@ class LockRecord(JsonObject):
             self.time = time
         else:
             self.time = epoch_to_datetime(time if time is not None else self._extract_attribute('time', others), ms=True)
-        self.user_id = user_id if user_id else self._extract_attribute('master', others)
-        self.uuid = uuid if uuid else self._extract_attribute('uuid', others)
+        self.user_id = user_id or self._extract_attribute('master', others)
+        self.uuid = uuid or self._extract_attribute('uuid', others)
         show_unknown_key_warning(self, others)
 
     @property
@@ -651,8 +650,8 @@ class LockKey(JsonObject):
         self.description = description if description is not None else self._extract_attribute('description', others)
         self.is_default = is_default if is_default is not None else self._extract_attribute('is_default', others)
         self.notify = notify if notify is not None else self._extract_attribute('notify', others)
-        self.userid = userid if userid else self._extract_attribute('userid', others)
-        self.username = username if username else self._extract_attribute('username', others)
+        self.userid = userid or self._extract_attribute('userid', others)
+        self.username = username or self._extract_attribute('username', others)
         if isinstance(permission, LockKeyPermission):
             self.permission = permission
         else:
@@ -683,7 +682,7 @@ class LockKey(JsonObject):
     @is_default.setter
     def is_default(self, value: Union[int, bool]):
         if isinstance(value, int):
-            value = True if value == 1 else False
+            value = value == 1
         self._is_default = value
 
     @property
@@ -693,7 +692,7 @@ class LockKey(JsonObject):
     @notify.setter
     def notify(self, value: Union[int, bool]):
         if isinstance(value, int):
-            value = True if value == 1 else False
+            value = value == 1
         self._notify = value
 
 
@@ -752,7 +751,7 @@ class Lock(LockableMixin, ContactMixin, VoltageMixin, Device):
     def parse_uuid(cls, mac: str) -> str:
         for model in DeviceModels.LOCK:
             if model in mac:
-                return Lock.remove_model_prefix(mac, model + '.')
+                return Lock.remove_model_prefix(mac, f'{model}.')
 
     def __init__(
         self,
@@ -777,7 +776,7 @@ class Lock(LockableMixin, ContactMixin, VoltageMixin, Device):
         self._parent = parent if parent is not None else super()._extract_attribute("parent", others)
         if ajar_alarm is None:
             ajar_alarm = self._extract_attribute(name=LockProps.ajar_alarm().pid, others=others)
-        self.ajar_alarm = True if ajar_alarm is True or ajar_alarm == 1 else False
+        self.ajar_alarm = ajar_alarm is True or ajar_alarm == 1
         if isinstance(left_open_time, LockLeftOpenTime):
             self.left_open_time = left_open_time
         else:
@@ -789,7 +788,7 @@ class Lock(LockableMixin, ContactMixin, VoltageMixin, Device):
                 self.left_open_time = LockLeftOpenTime.parse(left_open_time)
         if door_sensor is None:
             door_sensor = self._extract_attribute(name=LockProps.door_sensor().pid, others=others)
-        self.door_sensor = True if door_sensor is True or door_sensor == 1 else False
+        self.door_sensor = door_sensor is True or door_sensor == 1
         if isinstance(auto_lock_time, LockLeftOpenTime):
             self.auto_lock_time = auto_lock_time
         else:
@@ -801,15 +800,15 @@ class Lock(LockableMixin, ContactMixin, VoltageMixin, Device):
                 self.auto_lock_time = LockLeftOpenTime.parse(auto_lock_time)
         if trash_mode is None:
             trash_mode = self._extract_attribute(name=LockProps.trash_mode().pid, others=others)
-        self.trash_mode = True if trash_mode is True or trash_mode == 1 else False
+        self.trash_mode = trash_mode is True or trash_mode == 1
         if auto_unlock is None:
             auto_unlock = self._extract_attribute(name=LockProps.auto_unlock().pid, others=others)
-        self.auto_unlock = True if auto_unlock is True or auto_unlock == 1 else False
+        self.auto_unlock = auto_unlock is True or auto_unlock == 1
         if keypad is None:
             keypad = super()._extract_attribute("keypad", others)
             if keypad is not None:
                 keypad_enable_status = super()._extract_attribute("keypad_enable_status", others)
-                keypad = LockKeypad(**keypad, is_enabled=True if keypad_enable_status == 1 else False)
+                keypad = LockKeypad(**keypad, is_enabled=keypad_enable_status == 1)
         self.keypad = keypad
         if isinstance(open_volume, LockVolumeLevel):
             self.open_volume = open_volume
@@ -825,7 +824,8 @@ class Lock(LockableMixin, ContactMixin, VoltageMixin, Device):
             self.logger.debug("found non-empty locker_status")
             prop_def = LockProps.locker_lock_state()
             value = super()._extract_property(prop_def=prop_def, others=others["device_params"]["locker_status"])
-            ts = super()._extract_attribute(name=prop_def.pid + "_refreshtime", others=others["device_params"]["locker_status"])
+            ts = super()._extract_attribute(name=f"{prop_def.pid}_refreshtime", others=others["device_params"]["locker_status"])
+
             self.logger.debug(f"returning new DeviceProp with value {value.value}")
             return DeviceProp(definition=prop_def, ts=ts, value=value.value)
         # if switch_state == 1, device is UNlocked so we have to flip the bit
@@ -837,7 +837,8 @@ class Lock(LockableMixin, ContactMixin, VoltageMixin, Device):
             self.logger.debug("found non-empty locker_status")
             prop_def = LockProps.locker_open_close_state()
             value = super()._extract_property(prop_def=prop_def, others=others["device_params"]["locker_status"])
-            ts = super()._extract_attribute(name=prop_def.pid + "_refreshtime", others=others["device_params"]["locker_status"])
+            ts = super()._extract_attribute(name=f"{prop_def.pid}_refreshtime", others=others["device_params"]["locker_status"])
+
             self.logger.debug(f"returning new DeviceProp with {value}")
             # door: 1 = open, 2 = closed, 255 = some unknown value
             return DeviceProp(definition=prop_def, ts=ts, value=value == 1)
@@ -879,7 +880,7 @@ class LockGateway(AbstractWirelessNetworkedDevice):
     def parse_uuid(cls, mac: str) -> str:
         for model in DeviceModels.LOCK_GATEWAY:
             if model in mac:
-                return LockGateway.remove_model_prefix(mac, model + '.')
+                return LockGateway.remove_model_prefix(mac, f'{model}.')
 
     def __init__(
         self,

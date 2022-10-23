@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 import logging
 from datetime import datetime
 from enum import Enum
@@ -49,10 +50,7 @@ class VacuumMode(Enum):
 
     def __init__(self, description: str, codes: Union[int, Sequence[int]]):
         self.description = description
-        if isinstance(codes, (list, Tuple)):
-            self.codes = codes
-        else:
-            self.codes = [codes]
+        self.codes = codes if isinstance(codes, (list, Tuple)) else [codes]
 
     def describe(self) -> str:
         return self.description
@@ -107,12 +105,10 @@ class VacuumMapPoint(JsonObject):
         phi: Optional[float] = None,
         **others: dict
     ):
-        self.x = x if x else float(self._extract_attribute('x_', others))
-        self.y = y if y else float(self._extract_attribute('y_', others))
-        try:
+        self.x = x or float(self._extract_attribute('x_', others))
+        self.y = y or float(self._extract_attribute('y_', others))
+        with contextlib.suppress(TypeError):
             self.phi = phi if phi is not None else float(self._extract_attribute('phi_', others))
-        except TypeError:
-            pass
         show_unknown_key_warning(self, others)
 
 
@@ -136,10 +132,12 @@ class VacuumMapNavigationPoint(JsonObject):
         coordinates: VacuumMapPoint = None,
         **others: dict
     ):
-        self._id = id if id else int(self._extract_attribute('pointId_', others))
-        self._status = status if status else int(self._extract_attribute('status_', others))
-        self._point_type = point_type if point_type else int(self._extract_attribute('pointType_', others))
-        self._coordinates = coordinates if coordinates else VacuumMapPoint(**others)
+        self._id = id or int(self._extract_attribute('pointId_', others))
+        self._status = status or int(self._extract_attribute('status_', others))
+        self._point_type = point_type or int(self._extract_attribute('pointType_', others))
+
+        self._coordinates = coordinates or VacuumMapPoint(**others)
+        show_unknown_key_warning(self, others)
         show_unknown_key_warning(self, others)
 
     @property
@@ -181,8 +179,8 @@ class VacuumMapRoom(JsonObject):
         name_position: VacuumMapPoint = None,
         **others: dict
     ):
-        self._id = id if id else int(self._extract_attribute('roomId_', others))
-        self._name = name if name else self._extract_attribute('roomName_', others)
+        self._id = id or int(self._extract_attribute('roomId_', others))
+        self._name = name or self._extract_attribute('roomName_', others)
         if not clean_state:
             clean_state = self._extract_attribute('cleanState_', others)
             if clean_state:
@@ -422,11 +420,11 @@ class VacuumMap(JsonObject):
         blob: dict = None,
         **others: dict,
     ):
-        self._id = id if id else self._extract_attribute('mapId', others)
-        self._name = name if name else self._extract_attribute('mapName', others)
-        self._created = created if created else epoch_to_datetime(self._extract_attribute('createTime', others), ms=True)
-        self._updated = updated if updated else epoch_to_datetime(self._extract_attribute('updateTime', others), ms=True)
-        self._blob = blob if blob else self._extract_attribute('map', others)
+        self._id = id or self._extract_attribute('mapId', others)
+        self._name = name or self._extract_attribute('mapName', others)
+        self._created = created or epoch_to_datetime(self._extract_attribute('createTime', others), ms=True)
+        self._updated = updated or epoch_to_datetime(self._extract_attribute('updateTime', others), ms=True)
+        self._blob = blob or self._extract_attribute('map', others)
         show_unknown_key_warning(self, others)
 
     @property
@@ -502,7 +500,7 @@ class VacuumMap(JsonObject):
 
             return map
         except (binascii.Error, zlib.error) as e:
-            raise WyzeObjectFormationError(f"encountered an error parsing map blob {e}")
+            raise WyzeObjectFormationError(f"encountered an error parsing map blob {e}") from e
 
 
 class VacuumMapSummary(JsonObject):
@@ -530,19 +528,17 @@ class VacuumMapSummary(JsonObject):
         user_map_name: str = None,
         **others: dict
     ):
-        self._current_map = current_map if current_map else self._extract_attribute('current_map', others)
-        self._img_url = img_url if img_url else self._extract_attribute('img_url', others)
-        self._map_id = map_id if map_id else self._extract_attribute('map_id', others)
-        self._user_map_name = user_map_name if user_map_name else self._extract_attribute('user_map_name', others)
+        self._current_map = current_map or self._extract_attribute('current_map', others)
+        self._img_url = img_url or self._extract_attribute('img_url', others)
+        self._map_id = map_id or self._extract_attribute('map_id', others)
+        self._user_map_name = user_map_name or self._extract_attribute('user_map_name', others)
         self._room_info_list = None
         self._latest_area_point_list = None
-        latest_area_point_list = self._extract_attribute('latest_area_point_list', others)
-        if latest_area_point_list:
+        if latest_area_point_list := self._extract_attribute('latest_area_point_list', others):
             if not isinstance(latest_area_point_list, (list, Tuple)):
                 latest_area_point_list = [latest_area_point_list]
             self._latest_area_point_list = [VacuumMapPoint(x=point['point_x'], y=point['point_y']) for point in latest_area_point_list]
-        room_info_list = self._extract_attribute('room_info_list', others)
-        if room_info_list:
+        if room_info_list := self._extract_attribute('room_info_list', others):
             if not isinstance(room_info_list, (list, Tuple)):
                 room_info_list = [room_info_list]
             self._room_info_list = [VacuumMapRoom(id=room['room_id'], name=room['room_name']) for room in room_info_list]
@@ -566,11 +562,11 @@ class VacuumMapSummary(JsonObject):
 
     @property
     def rooms(self) -> Optional[Sequence[VacuumMapRoom]]:
-        return None if not self._room_info_list else self._room_info_list
+        return self._room_info_list or None
 
     @property
     def latest_points(self) -> Optional[Sequence[VacuumMapPoint]]:
-        return None if not self._latest_area_point_list else self._latest_area_point_list
+        return self._latest_area_point_list or None
 
 
 class VacuumSweepRecord(JsonObject):
@@ -602,12 +598,12 @@ class VacuumSweepRecord(JsonObject):
         model: str = None,
         **others: dict
     ):
-        self._created = created if created else epoch_to_datetime(self._extract_attribute('create_time', others), ms=True)
-        self._started = started if started else epoch_to_datetime(self._extract_attribute('timeBegin', others))
-        self._clean_type = clean_type if clean_type else self._extract_attribute('cleanType', others)
+        self._created = created or epoch_to_datetime(self._extract_attribute('create_time', others), ms=True)
+        self._started = started or epoch_to_datetime(self._extract_attribute('timeBegin', others))
+        self._clean_type = clean_type or self._extract_attribute('cleanType', others)
         self.clean_time = clean_time if clean_time is not None else self._extract_attribute('cleanTime', others)
         self.clean_size = clean_size if clean_size is not None else self._extract_attribute('cleanSize', others)
-        self._model = model if model else self._extract_attribute('model', others)
+        self._model = model or self._extract_attribute('model', others)
         self._map_img_big_url = self._extract_attribute('map_img_big_url', others)
         self._map_img_small_url = self._extract_attribute('map_img_small_url', others)
         show_unknown_key_warning(self, others)

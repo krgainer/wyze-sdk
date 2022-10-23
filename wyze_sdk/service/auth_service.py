@@ -67,11 +67,8 @@ class AuthServiceClient(ExServiceClient):
         password = self.request_verifier.md5_string(
             self.request_verifier.md5_string(self.request_verifier.md5_string(password))
         )
-        kwargs.update({
-            'nonce': str(nonce),
-            'email': email,
-            'password': password
-        })
+        kwargs |= {'nonce': str(nonce), 'email': email, 'password': password}
+
         response = self.api_call('/user/login', json=kwargs, nonce=nonce)
         if response['access_token']:
             return response

@@ -40,37 +40,23 @@ class EarthServiceClient(ExServiceClient):
         )
 
     def get_device_info(self, *, did: str, keys: Union[str, Sequence[str]], **kwargs) -> WyzeResponse:
-        if isinstance(keys, (list, Tuple)):
-            kwargs.update({"keys": ",".join(keys)})
-        else:
-            kwargs.update({"keys": keys})
-        kwargs.update({'device_id': did})
+        kwargs["keys"] = ",".join(keys) if isinstance(keys, (list, Tuple)) else keys
+        kwargs['device_id'] = did
         return self.api_call('/plugin/earth/device_info', http_verb="GET", params=kwargs)
 
     def get_iot_prop(self, *, did: str, keys: Union[str, Sequence[str]], **kwargs) -> WyzeResponse:
-        if isinstance(keys, (list, Tuple)):
-            kwargs.update({"keys": ",".join(keys)})
-        else:
-            kwargs.update({"keys": keys})
-        kwargs.update({'did': did})
+        kwargs["keys"] = ",".join(keys) if isinstance(keys, (list, Tuple)) else keys
+        kwargs['did'] = did
         return self.api_call('/plugin/earth/get_iot_prop', http_verb="GET", params=kwargs)
 
     def set_iot_prop(self, *, did: str, model: str, key: str, value: str, is_sub_device: bool = False, **kwargs) -> WyzeResponse:
         # This method is only used for updating the schedule and the resetting the filter(s) - basically
         # anything that doesn't need to talk to the physical unit
-        kwargs.update({
-            'did': did,
-            'model': model,
-            'props': {key: value},
-            'is_sub_device': 1 if is_sub_device else 0,
-        })
+        kwargs |= {'did': did, 'model': model, 'props': {key: value}, 'is_sub_device': 1 if is_sub_device else 0}
+
         return self.api_call('/plugin/earth/set_iot_prop', http_verb="POST", json=kwargs)
 
     def set_iot_prop_by_topic(self, *, did: str, model: str, props: dict[str, str], is_sub_device: bool = False, **kwargs) -> WyzeResponse:
-        kwargs.update({
-            'did': did,
-            'model': model,
-            'props': props,
-            'is_sub_device': 1 if is_sub_device else 0,
-        })
+        kwargs |= {'did': did, 'model': model, 'props': props, 'is_sub_device': 1 if is_sub_device else 0}
+
         return self.api_call('/plugin/earth/set_iot_prop_by_topic', http_verb="POST", json=kwargs)

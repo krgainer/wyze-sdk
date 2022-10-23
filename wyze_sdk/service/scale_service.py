@@ -49,7 +49,7 @@ class ScaleServiceClient(ExServiceClient):
 
         See: com.wyze.ihealth.d.a.m
         """
-        kwargs.update({'device_id': did})
+        kwargs['device_id'] = did
         return self.api_call('/plugin/scale/get_device_setting', http_verb="GET", params=kwargs)
 
     def get_device_member(self, *, did: str, **kwargs) -> WyzeResponse:
@@ -58,7 +58,7 @@ class ScaleServiceClient(ExServiceClient):
 
         See: com.wyze.ihealth.d.a.j
         """
-        kwargs.update({'device_id': did})
+        kwargs['device_id'] = did
         return self.api_call('/plugin/scale/get_device_member', http_verb="GET", params=kwargs)
 
     def get_family_member(self, *, did: str, **kwargs) -> WyzeResponse:
@@ -67,7 +67,7 @@ class ScaleServiceClient(ExServiceClient):
 
         See: com.wyze.ihealth.d.a.o
         """
-        kwargs.update({'device_id': did})
+        kwargs['device_id'] = did
         return self.api_call('/plugin/scale/get_family_member', http_verb="GET", params=kwargs)
 
     def get_user_preference(self, *, did: str, **kwargs) -> WyzeResponse:
@@ -76,7 +76,7 @@ class ScaleServiceClient(ExServiceClient):
 
         See: com.wyze.ihealth.d.a.p
         """
-        kwargs.update({'device_id': did})
+        kwargs['device_id'] = did
         return self.api_call('/plugin/scale/get_user_preference', http_verb="GET", params=kwargs)
 
     def get_token(self, *, did: str, **kwargs) -> WyzeResponse:
@@ -85,7 +85,7 @@ class ScaleServiceClient(ExServiceClient):
 
         See: com.wyze.ihealth.d.a.c
         """
-        kwargs.update({'device_id': did})
+        kwargs['device_id'] = did
         return self.api_call('/plugin/scale/get_token', http_verb="GET", params=kwargs)
 
     def get_user_device_relation(self, *, did: str, user_id: str, **kwargs) -> WyzeResponse:
@@ -94,7 +94,7 @@ class ScaleServiceClient(ExServiceClient):
 
         See: com.wyze.ihealth.d.a.d
         """
-        kwargs.update({'device_id': did, 'user_id': user_id})
+        kwargs |= {'device_id': did, 'user_id': user_id}
         return self.api_call('/plugin/scale/get_user_device_relation', http_verb="GET", params=kwargs)
 
     def update_device_setting(self, *, did: str, model: str, firmware_ver: str, mac: str, unit: str, broadcast: int, **kwargs) -> WyzeResponse:
@@ -103,7 +103,8 @@ class ScaleServiceClient(ExServiceClient):
 
         See: com.wyze.ihealth.d.a.f
         """
-        kwargs.update({'device_id': did, 'device_model': model, 'firmware_ver': firmware_ver, 'mac': mac, 'unit': unit, 'broadcast': broadcast})
+        kwargs |= {'device_id': did, 'device_model': model, 'firmware_ver': firmware_ver, 'mac': mac, 'unit': unit, 'broadcast': broadcast}
+
         return self.api_call('/plugin/scale/update_device_setting', json=kwargs)
 
     def get_user_profile(self):
@@ -120,7 +121,7 @@ class ScaleServiceClient(ExServiceClient):
 
         See: com.wyze.ihealth.d.a.l and com.samsung.android.sdk.healthdata.HealthUserProfile
         """
-        kwargs.update({'logo_url': logo_url, 'nickname': nickname, 'gender': gender, 'birthDate': birth_date, 'height': height, 'height_unit': height_unit, 'body_type': body_type, 'occupation': occupation})
+        kwargs |= {'logo_url': logo_url, 'nickname': nickname, 'gender': gender, 'birthDate': birth_date, 'height': height, 'height_unit': height_unit, 'body_type': body_type, 'occupation': occupation}
         return self.api_call('/app/v2/platform/update_user_profile', json=kwargs)
 
     def get_goal_weight(self, *, user_id: str, **kwargs) -> WyzeResponse:
@@ -129,7 +130,7 @@ class ScaleServiceClient(ExServiceClient):
 
         See: com.wyze.ihealth.d.b.v
         """
-        kwargs.update({'family_member_id': user_id})
+        kwargs['family_member_id'] = user_id
         return self.api_call('/plugin/scale/get_goal_weight', http_verb="GET", params=kwargs)
 
     def get_heart_rate_record_list(self, *, user_id: Optional[str] = None, record_number: Optional[int] = 1, measure_ts: Optional[int] = None, **kwargs) -> WyzeResponse:
@@ -139,10 +140,10 @@ class ScaleServiceClient(ExServiceClient):
         See: com.wyze.ihealth.d.b.b
         """
         if user_id:
-            kwargs.update({'family_member_id': user_id})
-        kwargs.update({'record_number': str(record_number)})
+            kwargs['family_member_id'] = user_id
+        kwargs['record_number'] = str(record_number)
         if measure_ts:
-            kwargs.update({'measure_ts': str(measure_ts)})
+            kwargs['measure_ts'] = str(measure_ts)
         return self.api_call('/plugin/scale/get_heart_rate_record_list', http_verb="GET", params=kwargs)
 
     def get_latest_records(self, *, user_id: Optional[str] = None, **kwargs) -> WyzeResponse:
@@ -152,7 +153,7 @@ class ScaleServiceClient(ExServiceClient):
         See: com.wyze.ihealth.d.b.t
         """
         if user_id:
-            kwargs.update({'family_member_id': user_id})
+            kwargs['family_member_id'] = user_id
         return self.api_call('/plugin/scale/get_latest_record', http_verb="GET", params=kwargs)
 
     def get_records(self, *, user_id: Optional[str] = None, start_time: datetime, end_time: datetime, **kwargs) -> WyzeResponse:
@@ -162,8 +163,8 @@ class ScaleServiceClient(ExServiceClient):
         See: com.wyze.ihealth.d.b.i and com.samsung.android.sdk.healthdata.HealthConstants.SessionMeasurement
         """
         if user_id:
-            kwargs.update({'family_member_id': user_id})
-        kwargs.update({'start_time': str(0), 'end_time': str(datetime_to_epoch(end_time))})
+            kwargs['family_member_id'] = user_id
+        kwargs |= {'start_time': str(0), 'end_time': str(datetime_to_epoch(end_time))}
         return self.api_call('/plugin/scale/get_record_range', http_verb="GET", params=kwargs)
 
     def delete_goal_weight(self, *, user_id: Optional[str] = None, **kwargs) -> WyzeResponse:
@@ -173,7 +174,7 @@ class ScaleServiceClient(ExServiceClient):
         See: com.wyze.ihealth.d.b.j
         """
         if user_id:
-            kwargs.update({'family_member_id': user_id})
+            kwargs['family_member_id'] = user_id
         return self.api_call('/plugin/scale/delete_goal_weight', http_verb="GET", params=kwargs)
 
     def add_heart_rate_record(self, *, did: str, user_id: str, measure_ts: int, heart_rate: int, **kwargs) -> WyzeResponse:
@@ -182,7 +183,7 @@ class ScaleServiceClient(ExServiceClient):
 
         See: com.wyze.ihealth.d.b.p
         """
-        kwargs.update({'device_id': did, 'family_member_id': user_id, 'measure_ts': measure_ts, 'heart_rate': str(heart_rate)})
+        kwargs |= {'device_id': did, 'family_member_id': user_id, 'measure_ts': measure_ts, 'heart_rate': str(heart_rate)}
         return self.api_call('/plugin/scale/get_latest_record', json=kwargs)
 
     def add_weight_record(self, *, did: str, mac: str, user_id: str, measure_ts: int, measure_type: int = 1, weight: float, **kwargs) -> WyzeResponse:
@@ -191,7 +192,8 @@ class ScaleServiceClient(ExServiceClient):
 
         See: com.wyze.ihealth.d.b.k
         """
-        kwargs.update({'device_id': did, 'mac': mac, 'family_member_id': user_id, 'measure_ts': measure_ts, 'measure_type': measure_type, 'weight': weight})
+        kwargs |= {'device_id': did, 'mac': mac, 'family_member_id': user_id, 'measure_ts': measure_ts, 'measure_type': measure_type, 'weight': weight}
+
         return self.api_call('/plugin/scale/get_latest_record', json=kwargs)
 
     def delete_record(self, *, data_id=Union[int, Sequence[int]], **kwargs) -> WyzeResponse:
@@ -201,7 +203,7 @@ class ScaleServiceClient(ExServiceClient):
         See: com.wyze.ihealth.d.b.u
         """
         if isinstance(data_id, (list, Tuple)):
-            kwargs.update({"data_id_list": ",".join(data_id)})
+            kwargs["data_id_list"] = ",".join(data_id)
         else:
-            kwargs.update({"data_id_list": [data_id]})
+            kwargs["data_id_list"] = [data_id]
         return self.api_call('/plugin/scale/delete_record', json=kwargs)

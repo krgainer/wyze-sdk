@@ -40,15 +40,12 @@ class PlatformServiceClient(ExServiceClient):
         )
 
     def get_variable(self, *, keys: Union[str, Sequence[str]], **kwargs):
-        if isinstance(keys, (list, Tuple)):
-            kwargs.update({"keys": ",".join(keys)})
-        else:
-            kwargs.update({"keys": keys})
-        kwargs.update({'category': 'app'})
+        kwargs["keys"] = ",".join(keys) if isinstance(keys, (list, Tuple)) else keys
+        kwargs['category'] = 'app'
         return self.api_call('/app/v2/platform/get_variable', http_verb="GET", params=kwargs)
 
     def get_user_profile(self, *, appid: Optional[str] = None, **kwargs):
         request_specific_headers = {}
         if appid is not None:
-            request_specific_headers.update({'appid': appid})
+            request_specific_headers['appid'] = appid
         return self.api_call('/app/v2/platform/get_user_profile', http_verb="GET", request_specific_headers=request_specific_headers)

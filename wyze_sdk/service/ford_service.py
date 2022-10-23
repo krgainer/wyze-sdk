@@ -141,24 +141,24 @@ class FordServiceClient(BaseServiceClient):
         """
         See: com.yunding.ford.manager.NetDeviceManager.getUserDevice
         """
-        kwargs.update({'limit': str(limit), "offset": str(offset), "detail": "1"})
+        kwargs |= {'limit': str(limit), "offset": str(offset), "detail": "1"}
         return self.api_call('/openapi/v1/device', params=kwargs)
 
     def get_lock_info(self, *, uuid: str, with_keypad: bool = True, **kwargs) -> FordResponse:
         """
         See: com.yunding.ford.manager.NetLockManager.getLockInfo
         """
-        kwargs.update({'uuid': uuid})
+        kwargs['uuid'] = uuid
         if with_keypad:
-            kwargs.update({'with_keypad': 1})
+            kwargs['with_keypad'] = 1
         return self.api_call('/openapi/lock/v1/info', params=kwargs)
 
     def get_keypad_info(self, *, uuid: str, **kwargs) -> FordResponse:
-        kwargs.update({'uuid': uuid})
+        kwargs['uuid'] = uuid
         return self.api_call('/openapi/keypad/v1/info', params=kwargs)
 
     def get_gateway_info(self, *, uuid: str, **kwargs) -> FordResponse:
-        kwargs.update({'uuid': uuid})
+        kwargs['uuid'] = uuid
         return self.api_call('/openapi/gateway/v1/info', params=kwargs)
 
     def get_crypt_secret(self, **kwargs) -> FordResponse:
@@ -171,9 +171,9 @@ class FordServiceClient(BaseServiceClient):
         """
         See: com.yunding.ford.manager.NetLockManager.getFamilyRecordCount
         """
-        kwargs.update({'uuid': uuid, 'begin': str(datetime_to_epoch(begin))})
+        kwargs |= {'uuid': uuid, 'begin': str(datetime_to_epoch(begin))}
         if end is not None:
-            kwargs.update({'end': datetime_to_epoch(end)})
+            kwargs['end'] = datetime_to_epoch(end)
         return self.api_call('/openapi/v1/safety/count', params=kwargs)
 
     def get_family_records(self, *, uuid: str, begin: datetime, end: Optional[datetime] = None, offset: int = 0, limit: int = 20, **kwargs) -> FordResponse:
@@ -182,54 +182,49 @@ class FordServiceClient(BaseServiceClient):
 
         See: com.yunding.ford.manager.NetLockManager.getFamilyRecord
         """
-        kwargs.update({'uuid': uuid, 'begin': str(datetime_to_epoch(begin)), 'offset': str(offset), 'limit': str(limit)})
+        kwargs |= {'uuid': uuid, 'begin': str(datetime_to_epoch(begin)), 'offset': str(offset), 'limit': str(limit)}
+
         if end is not None:
-            kwargs.update({'end': str(datetime_to_epoch(end))})
+            kwargs['end'] = str(datetime_to_epoch(end))
         return self.api_call('/openapi/v1/safety/family_record', params=kwargs)
 
     def remote_control_lock(self, *, uuid: str, action: str, **kwargs) -> FordResponse:
         """
         See: com.yunding.ford.manager.NetLockManager.remoteControlLock
         """
-        kwargs.update({'uuid': uuid, 'action': action})
+        kwargs |= {'uuid': uuid, 'action': action}
         return self.api_call('/openapi/lock/v1/control', http_verb="POST", json=kwargs)
 
     def get_passwords(self, *, uuid: str, **kwargs) -> FordResponse:
-        kwargs.update({'uuid': uuid})
+        kwargs['uuid'] = uuid
         return self.api_call('/openapi/lock/v1/pwd', params=kwargs)
 
     def add_password(self, *, uuid: str, password: str = None, name: str = None, permission: LockKeyPermission, periodicity: Optional[LockKeyPeriodicity] = None, userid: str, **kwargs) -> FordResponse:
-        kwargs.update({
-            'uuid': uuid,
-            'userid': userid,
-        })
-        kwargs.update({'permission': json.dumps(permission, default=default)})
+        kwargs |= {'uuid': uuid, 'userid': userid}
+
+        kwargs['permission'] = json.dumps(permission, default=default)
         if periodicity is not None:
-            kwargs.update({'period_info': json.dumps(periodicity, default=default)})
+            kwargs['period_info'] = json.dumps(periodicity, default=default)
         if password is not None:
-            kwargs.update({'password': password})
+            kwargs['password'] = password
         if name is not None:
-            kwargs.update({'name': name})
+            kwargs['name'] = name
         return self.api_call('/openapi/lock/v1/pwd/operations/add', http_verb="POST", json=kwargs)
 
     def update_password(self, *, uuid: str, password_id: str, password: Optional[str] = None, name: str = None, permission: Optional[LockKeyPermission] = None, periodicity: Optional[LockKeyPeriodicity] = None, **kwargs) -> FordResponse:
-        kwargs.update({
-            'uuid': uuid,
-            'passwordid': password_id,
-        })
+        kwargs |= {'uuid': uuid, 'passwordid': password_id}
+
         if permission is not None:
-            kwargs.update({'permission': json.dumps(permission, default=default)})
+            kwargs['permission'] = json.dumps(permission, default=default)
         if periodicity is not None:
-            kwargs.update({'period_info': json.dumps(periodicity, default=default)})
+            kwargs['period_info'] = json.dumps(periodicity, default=default)
         if password is not None:
-            kwargs.update({'password': password})
+            kwargs['password'] = password
         if name is not None:
-            kwargs.update({'name': name})
+            kwargs['name'] = name
         return self.api_call('/openapi/lock/v1/pwd/operations/update', http_verb="POST", json=kwargs)
 
     def delete_password(self, *, uuid: str, password_id: str, **kwargs) -> FordResponse:
-        kwargs.update({
-            'uuid': uuid,
-            'passwordid': password_id,
-        })
+        kwargs |= {'uuid': uuid, 'passwordid': password_id}
+
         return self.api_call('/openapi/lock/v1/pwd/operations/delete', http_verb="POST", json=kwargs)

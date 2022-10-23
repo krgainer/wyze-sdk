@@ -53,7 +53,7 @@ class BaseServiceClient(metaclass=ABCMeta):
         # self.headers["User-Agent"] = self._get_user_agent(
         #     user_agent_prefix, user_agent_suffix
         # )
-        self.phone_id = phone_id if phone_id else str(uuid.uuid4())
+        self.phone_id = phone_id or str(uuid.uuid4())
         self.phone_type = phone_type
         self.default_params = {}
         self.request_verifier = request_verifier
@@ -241,26 +241,26 @@ class BaseServiceClient(metaclass=ABCMeta):
             final_headers["User-Agent"] = "okhttp/4.7.2"  # self._get_user_agent()
 
         if signature:
-            final_headers.update({"Signature": "{}".format(signature)})
+            final_headers["Signature"] = f"{signature}"
         if signature2:
-            final_headers.update({"Signature2": "{}".format(signature2)})
+            final_headers["Signature2"] = f"{signature2}"
         if headers is None:
             headers = {}
 
         # Merge headers specified at client initialization.
-        final_headers.update(headers)
+        final_headers |= headers
 
         # Merge headers specified for a specific request. e.g. oauth.access
         if request_specific_headers:
-            final_headers.update(request_specific_headers)
+            final_headers |= request_specific_headers
 
         if has_json:
-            final_headers.update({"Content-Type": "application/json;charset=utf-8"})
+            final_headers["Content-Type"] = "application/json;charset=utf-8"
 
         return final_headers
 
     def get_sorted_params(self, params: dict = {}) -> str:
-        return '&'.join(map(lambda x: x[0] + '=' + str(x[1]), params))
+        return '&'.join(map(lambda x: f'{x[0]}={str(x[1])}', params))
 
 
 class WpkNetServiceClient(BaseServiceClient, metaclass=ABCMeta):

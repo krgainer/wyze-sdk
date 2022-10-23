@@ -26,10 +26,7 @@ class EventAlarmType(Enum):
 
     def __init__(self, description: str, codes: Union[int, Sequence[int]]):
         self.description = description
-        if isinstance(codes, (list, Tuple)):
-            self.codes = codes
-        else:
-            self.codes = [codes]
+        self.codes = codes if isinstance(codes, (list, Tuple)) else [codes]
 
     def describe(self):
         return self.description
@@ -64,10 +61,7 @@ class AiEventType(Enum):
 
     def __init__(self, description: str, codes: Union[int, Sequence[int]]):
         self.description = description
-        if isinstance(codes, (list, Tuple)):
-            self.codes = codes
-        else:
-            self.codes = [codes]
+        self.codes = codes if isinstance(codes, (list, Tuple)) else [codes]
 
     def describe(self):
         return self.description
@@ -89,10 +83,7 @@ class EventFileType(Enum):
 
     def __init__(self, description: str, codes: Union[int, Sequence[int]]):
         self.description = description
-        if isinstance(codes, (list, Tuple)):
-            self.codes = codes
-        else:
-            self.codes = [codes]
+        self.codes = codes if isinstance(codes, (list, Tuple)) else [codes]
 
     def describe(self):
         return self.description
@@ -129,10 +120,10 @@ class EventFile(JsonObject):
         url: str = None,
         **others: dict
     ):
-        self.id = file_id if file_id else self._extract_attribute('file_id', others)
+        self.id = file_id or self._extract_attribute('file_id', others)
         self.type = type if type is not None else self._extract_attribute('type', others)
-        self.status = status if status else self._extract_attribute('status', others)  # not used
-        self.url = url if url else self._extract_attribute('url', others)
+        self.status = status or self._extract_attribute('status', others)  # not used
+        self.url = url or self._extract_attribute('url', others)
         show_unknown_key_warning(self, others)
 
     @property
@@ -182,12 +173,12 @@ class Event(JsonObject):
         read_state: int = None,
         **others: dict
     ):
-        self.id = event_id if event_id else self._extract_attribute('event_id', others)
-        self.mac = device_mac if device_mac else self._extract_attribute('device_mac', others)
-        self.time = event_ts if event_ts else epoch_to_datetime(self._extract_attribute('event_ts', others), ms=True)
-        self.category = event_category if event_category else self._extract_attribute('event_category', others)
-        self.parameters = event_params if event_params else self._extract_attribute('event_params', others)
-        self.alarm_type = event_value if event_value else self._extract_attribute('event_value', others)
+        self.id = event_id or self._extract_attribute('event_id', others)
+        self.mac = device_mac or self._extract_attribute('device_mac', others)
+        self.time = event_ts or epoch_to_datetime(self._extract_attribute('event_ts', others), ms=True)
+        self.category = event_category or self._extract_attribute('event_category', others)
+        self.parameters = event_params or self._extract_attribute('event_params', others)
+        self.alarm_type = event_value or self._extract_attribute('event_value', others)
         self.files = file_list if file_list is not None else self._extract_attribute('file_list', others)
         self.tags = tag_list if tag_list is not None else self._extract_attribute('tag_list', others)
         self.is_read = (read_state if read_state is not None else self._extract_attribute('read_state', others)) == 1
@@ -212,7 +203,9 @@ class Event(JsonObject):
         return self._tags
 
     @tags.setter
-    def tags(self, value: Sequence[int] = []):
+    def tags(self, value: Sequence[int] = None):
+        if value is None:
+            value = []
         self._tags = [AiEventType.parse(tag) for tag in value]
 
     @property
@@ -220,5 +213,7 @@ class Event(JsonObject):
         return self._files
 
     @files.setter
-    def files(self, value: Sequence[dict] = []):
+    def files(self, value: Sequence[dict] = None):
+        if value is None:
+            value = []
         self._files = [EventFile(**file) for file in value]

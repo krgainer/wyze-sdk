@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from time import gmtime, strftime
 from typing import Any, Dict, Optional, Sequence, Tuple, Union
 
@@ -30,7 +30,7 @@ class ApiServiceClient(BaseServiceClient):
         sc: str = SC,
     ):
         super().__init__(token=token, base_url=base_url, app_name=app_name, request_verifier=RequestVerifier(signing_secret=None))
-        self.app_ver = self.app_name + '___' + self.app_version
+        self.app_ver = f'{self.app_name}___{self.app_version}'
         self.sc = sc
 
     def _get_headers(
@@ -40,14 +40,9 @@ class ApiServiceClient(BaseServiceClient):
     ) -> Dict[str, str]:
         return super()._get_headers(headers=None, has_json=True, request_specific_headers=request_specific_headers)
 
-    def api_call(
-        self,
-        api_method: str,
-        *,
-        http_verb: str = "POST",
-        json: dict = {},
-        headers: dict = None,
-    ) -> WyzeResponse:
+    def api_call(self, api_method: str, *, http_verb: str = "POST", json: dict = None, headers: dict = None) -> WyzeResponse:
+        if json is None:
+            json = {}
         json['access_token'] = self.token
         json['app_name'] = self.app_name
         json['app_ver'] = self.app_ver
@@ -68,24 +63,22 @@ class ApiServiceClient(BaseServiceClient):
     def refresh_token(self, *, refresh_token: str, **kwargs) -> WyzeResponse:
         SV_REFRESH_TOKEN = 'd91914dd28b7492ab9dd17f7707d35a3'
 
-        kwargs.update({"refresh_token": refresh_token, "sv": SV_REFRESH_TOKEN})
+        kwargs |= {"refresh_token": refresh_token, "sv": SV_REFRESH_TOKEN}
         return self.api_call('/app/user/refresh_token', json=kwargs)
 
     def set_device_property(self, *, mac: str, model: str, pid: str, value: Any, **kwargs) -> WyzeResponse:
         SV_SET_DEVICE_PROPERTY = '44b6d5640c4d4978baba65c8ab9a6d6e'
 
-        kwargs.update({"device_mac": mac, "device_model": model, "pid": pid, "pvalue": str(value), "sv": SV_SET_DEVICE_PROPERTY})
+        kwargs |= {"device_mac": mac, "device_model": model, "pid": pid, "pvalue": str(value), "sv": SV_SET_DEVICE_PROPERTY}
+
         return self.api_call('/app/v2/device/set_property', json=kwargs)
 
-    def set_device_property_list(self, *, mac: str, model: str, props: Union[DeviceProp, Sequence[DeviceProp]] = [], **kwargs) -> WyzeResponse:
+    def set_device_property_list(self, *, mac: str, model: str, props: Union[DeviceProp, Sequence[DeviceProp]] = None, **kwargs) -> WyzeResponse:
+        if props is None:
+            props = []
         SV_SET_DEVICE_PROPERTY_LIST = 'a8290b86080a481982b97045b8710611'
 
-        kwargs.update({
-            "device_mac": mac,
-            "device_model": model,
-            "property_list": [],
-            "sv": SV_SET_DEVICE_PROPERTY_LIST
-        })
+        kwargs |= {"device_mac": mac, "device_model": model, "property_list": [], "sv": SV_SET_DEVICE_PROPERTY_LIST}
 
         if not isinstance(props, (list, Tuple)):
             props = [props]
@@ -100,46 +93,50 @@ class ApiServiceClient(BaseServiceClient):
     def get_device_list_property_list(self, *, device_ids: Sequence[str], target_pids: Sequence[str], **kwargs) -> WyzeResponse:
         SV_GET_DEVICE_LIST_PROPERTY_LIST = 'be9e90755d3445d0a4a583c8314972b6'
 
-        kwargs.update({"device_list": device_ids, "target_pid_list": target_pids, "sv": SV_GET_DEVICE_LIST_PROPERTY_LIST})
+        kwargs |= {"device_list": device_ids, "target_pid_list": target_pids, "sv": SV_GET_DEVICE_LIST_PROPERTY_LIST}
+
         return self.api_call('/app/v2/device_list/get_property_list', json=kwargs)
 
-    def get_device_property_list(self, *, mac: str, model: str, target_pids: Sequence[str] = [], **kwargs) -> WyzeResponse:
+    def get_device_property_list(self, *, mac: str, model: str, target_pids: Sequence[str] = None, **kwargs) -> WyzeResponse:
+        if target_pids is None:
+            target_pids = []
         SV_GET_DEVICE_PROPERTY_LIST = '1df2807c63254e16a06213323fe8dec8'
 
-        kwargs.update({"device_mac": mac, "device_model": model, "sv": SV_GET_DEVICE_PROPERTY_LIST})
+        kwargs |= {"device_mac": mac, "device_model": model, "sv": SV_GET_DEVICE_PROPERTY_LIST}
+
         if target_pids is not None:
-            kwargs.update({"target_pid_list": target_pids})
+            kwargs["target_pid_list"] = target_pids
 
         return self.api_call('/app/v2/device/get_property_list', json=kwargs)
 
     def get_v1_device_info(self, *, mac: str, **kwargs) -> WyzeResponse:
         SV_GET_DEVICE_INFO = '90fea740c4c045f9a3084c17cee71d46'
 
-        kwargs.update({"device_mac": mac, "sv": SV_GET_DEVICE_INFO})
+        kwargs |= {"device_mac": mac, "sv": SV_GET_DEVICE_INFO}
         return self.api_call('/app/device/get_device_info', json=kwargs)
 
     def get_user_info(self, **kwargs) -> WyzeResponse:
         SV_GET_USER_INFO = '6e054e04b7144c90af3b1281b6533492'
 
-        kwargs.update({"sv": SV_GET_USER_INFO})
+        kwargs["sv"] = SV_GET_USER_INFO
         return self.api_call('/app/user/get_user_info', json=kwargs)
 
     def logout(self, **kwargs) -> WyzeResponse:
         SV_LOGOUT = '759245b61abd49128585e95f30e61add'
 
-        kwargs.update({"sv": SV_LOGOUT})
+        kwargs["sv"] = SV_LOGOUT
         return self.api_call('/app/user/logout', json=kwargs)
 
     def get_device_info(self, *, mac: str, model: str, **kwargs) -> WyzeResponse:
         SV_GET_DEVICE_INFO = '81d1abc794ba45a39fdd21233d621e84'
 
-        kwargs.update({"device_mac": mac, "device_model": model, "sv": SV_GET_DEVICE_INFO})
+        kwargs |= {"device_mac": mac, "device_model": model, "sv": SV_GET_DEVICE_INFO}
         return self.api_call('/app/v2/device/get_device_Info', json=kwargs)
 
     def get_object_list(self, **kwargs) -> WyzeResponse:
         SV_GET_DEVICE_LIST = 'c417b62d72ee44bf933054bdca183e77'
 
-        kwargs.update({"sv": SV_GET_DEVICE_LIST})
+        kwargs["sv"] = SV_GET_DEVICE_LIST
         return self.api_call(
             '/app/v2/home_page/get_object_list', json=kwargs)
 
@@ -153,7 +150,8 @@ class ApiServiceClient(BaseServiceClient):
         """
         SV_GET_DEVICE_TIMER = 'ddd49252f61944dc9c46d1a770a5980f'
 
-        kwargs.update({"device_mac": mac, "action_type": action_type, "sv": SV_GET_DEVICE_TIMER})
+        kwargs |= {"device_mac": mac, "action_type": action_type, "sv": SV_GET_DEVICE_TIMER}
+
         return self.api_call('/app/v2/device/timer/get', json=kwargs)
 
     def set_device_timer(self, *, mac: str, delay_time: int, action_value: int, **kwargs) -> WyzeResponse:
@@ -164,14 +162,8 @@ class ApiServiceClient(BaseServiceClient):
         """
         SV_SET_DEVICE_TIMER = '1b3e8bfc7f654e1eaddf8db22090034f'
 
-        kwargs.update({
-            "device_mac": mac,
-            "action_type": 1,
-            "action_value": action_value,
-            "delay_time": delay_time,
-            "plan_execute_ts": datetime_to_epoch(datetime.now() + timedelta(seconds=delay_time)),
-            "sv": SV_SET_DEVICE_TIMER
-        })
+        kwargs |= {"device_mac": mac, "action_type": 1, "action_value": action_value, "delay_time": delay_time, "plan_execute_ts": datetime_to_epoch(datetime.now() + timedelta(seconds=delay_time)), "sv": SV_SET_DEVICE_TIMER}
+
         return self.api_call('/app/v2/device/timer/set', json=kwargs)
 
     def get_device_group_timer(self, *, id: int, action_type: int, **kwargs) -> WyzeResponse:
@@ -183,29 +175,41 @@ class ApiServiceClient(BaseServiceClient):
         },
         """
         SV_GET_DEVICE_GROUP_TIMER = 'bf55bbf1db0e4fa18cc7a13022de33a3'
-
-        kwargs.update({"group_id": str(id), "action_type": action_type, "sv": SV_GET_DEVICE_GROUP_TIMER})
+        kwargs |= {"group_id": str(id), "action_type": action_type, "sv": SV_GET_DEVICE_GROUP_TIMER}
         return self.api_call('/app/v2/device_group/timer/get', json=kwargs)
 
     def cancel_device_timer(self, *, mac: str, action_type: int, **kwargs) -> WyzeResponse:
         SV_CANCEL_DEVICE_TIMER = '8670b7ddb88845468b77ef4d383bfd59'
-
-        kwargs.update({"device_mac": mac, "action_type": action_type, "sv": SV_CANCEL_DEVICE_TIMER})
+        kwargs |= {"device_mac": mac, "action_type": action_type, "sv": SV_CANCEL_DEVICE_TIMER}
         return self.api_call('/app/v2/device/timer/cancel', json=kwargs)
 
-    def get_smoke_event_list(self, *, device_ids: Sequence[str] = [], begin: Optional[datetime] = None, end: Optional[datetime] = None, limit: Optional[int] = 20, order_by: Optional[int] = 2, **kwargs) -> WyzeResponse:
+    def get_smoke_event_list(self, *, device_ids: Sequence[str] = None, begin: Optional[datetime] = None, end: Optional[datetime] = None, limit: Optional[int] = 20, order_by: Optional[int] = 2, **kwargs) -> WyzeResponse:
+        if device_ids is None:
+            device_ids = []
         return self.get_event_list(device_ids=device_ids, event_values=EventAlarmType.SMOKE, begin=begin, end=end, limit=limit, order_by=order_by)
 
-    def get_sound_event_list(self, *, device_ids: Sequence[str] = [], begin: Optional[datetime] = None, end: Optional[datetime] = None, limit: Optional[int] = 20, order_by: Optional[int] = 2, **kwargs) -> WyzeResponse:
+    def get_sound_event_list(self, *, device_ids: Sequence[str] = None, begin: Optional[datetime] = None, end: Optional[datetime] = None, limit: Optional[int] = 20, order_by: Optional[int] = 2, **kwargs) -> WyzeResponse:
+        if device_ids is None:
+            device_ids = []
         return self.get_event_list(device_ids=device_ids, event_values=EventAlarmType.SOUND, begin=begin, end=end, limit=limit, order_by=order_by)
 
-    def get_co_event_list(self, *, device_ids: Sequence[str] = [], begin: Optional[datetime] = None, end: Optional[datetime] = None, limit: Optional[int] = 20, order_by: Optional[int] = 2, **kwargs) -> WyzeResponse:
+    def get_co_event_list(self, *, device_ids: Sequence[str] = None, begin: Optional[datetime] = None, end: Optional[datetime] = None, limit: Optional[int] = 20, order_by: Optional[int] = 2, **kwargs) -> WyzeResponse:
+        if device_ids is None:
+            device_ids = []
         return self.get_event_list(device_ids=device_ids, event_values=EventAlarmType.CO, begin=begin, end=end, limit=limit, order_by=order_by)
 
-    def get_motion_event_list(self, *, device_ids: Sequence[str] = [], begin: Optional[datetime] = None, end: Optional[datetime] = None, limit: Optional[int] = 20, order_by: Optional[int] = 2, **kwargs) -> WyzeResponse:
+    def get_motion_event_list(self, *, device_ids: Sequence[str] = None, begin: Optional[datetime] = None, end: Optional[datetime] = None, limit: Optional[int] = 20, order_by: Optional[int] = 2, **kwargs) -> WyzeResponse:
+        if device_ids is None:
+            device_ids = []
         return self.get_event_list(device_ids=device_ids, event_values=EventAlarmType.MOTION, begin=begin, end=end, limit=limit, order_by=order_by)
 
-    def get_event_list(self, *, device_ids: Sequence[str] = [], event_values: Union[EventAlarmType, Sequence[EventAlarmType]] = [], event_tags: Sequence[str] = [], event_type: str = "1", begin: Optional[datetime] = None, end: Optional[datetime] = None, limit: int = 20, order_by: int = 2, **kwargs) -> WyzeResponse:
+    def get_event_list(self, *, device_ids: Sequence[str] = None, event_values: Union[EventAlarmType, Sequence[EventAlarmType]] = None, event_tags: Sequence[str] = None, event_type: str = "1", begin: Optional[datetime] = None, end: Optional[datetime] = None, limit: int = 20, order_by: int = 2, **kwargs) -> WyzeResponse:
+        if device_ids is None:
+            device_ids = []
+        if event_values is None:
+            event_values = []
+        if event_tags is None:
+            event_tags = []
         SV_GET_EVENT_LIST = 'bdcb412e230049c0be0916e75022d3f3'
 
         if limit < 1 or limit > 20:
@@ -217,58 +221,31 @@ class ApiServiceClient(BaseServiceClient):
         if end is None:
             end = datetime.now()
         if isinstance(event_values, (list, Tuple)):
-            kwargs.update({
-                "event_value_list": [code for alarm_type in event_values for code in alarm_type.codes]
-            })
+            kwargs["event_value_list"] = [code for alarm_type in event_values for code in alarm_type.codes]
         else:
-            kwargs.update({"event_value_list": [code for code in event_values.codes]})
-        kwargs.update({
-            "device_mac_list": device_ids,
-            'begin_time': datetime_to_epoch(begin),
-            "event_tag_list": event_tags,
-            "event_type": event_type,
-            'end_time': datetime_to_epoch(end),
-            'order_by': order_by,
-            'count': limit,
-            "sv": SV_GET_EVENT_LIST,
-        })
+            kwargs["event_value_list"] = list(event_values.codes)
+        kwargs |= {"device_mac_list": device_ids, 'begin_time': datetime_to_epoch(begin), "event_tag_list": event_tags, "event_type": event_type, 'end_time': datetime_to_epoch(end), 'order_by': order_by, 'count': limit, "sv": SV_GET_EVENT_LIST}
+
         return self.api_call('/app/v2/device/get_event_list', json=kwargs)
 
     def set_read_state_list(self, *, events: dict[str, Sequence[str]], read_state: bool = True, **kwargs) -> WyzeResponse:
         SV_SET_READ_STATE_LIST = '1e9a7d77786f4751b490277dc3cfa7b5'
-
-        kwargs.update({
-            "event_list": [{
-                "device_mac": mac,
-                "event_id_list": [event.id for event in events],
-                "event_type": 1
-            } for mac, events in events],
-            "read_state": 1 if read_state else 0,
-            "sv": SV_SET_READ_STATE_LIST,
-        })
+        kwargs |= {"event_list": [{"device_mac": mac, "event_id_list": [event.id for event in events], "event_type": 1} for mac, events in events.items()], "read_state": 1 if read_state else 0, "sv": SV_SET_READ_STATE_LIST}
         return self.api_call('/app/v2/device_event/set_read_state_list', json=kwargs)
 
-    def run_action(self, *, mac: str, action_key: str, action_params: Optional[dict] = {}, custom_string: Optional[str] = None, provider_key: str, **kwargs) -> WyzeResponse:
+    def run_action(self, *, mac: str, action_key: str, action_params: Optional[dict] = None, custom_string: Optional[str] = None, provider_key: str, **kwargs) -> WyzeResponse:
+        if action_params is None:
+            action_params = {}
         SV_RUN_ACTION = '011a6b42d80a4f32b4cc24bb721c9c96'
-
-        kwargs.update({
-            "instance_id": mac,
-            "action_key": action_key,
-            "provider_key": provider_key,
-            "sv": SV_RUN_ACTION
-        })
-        kwargs.update({"action_params": action_params})
+        kwargs |= {"instance_id": mac, "action_key": action_key, "provider_key": provider_key, "sv": SV_RUN_ACTION}
+        kwargs["action_params"] = action_params
         if custom_string is not None:
-            kwargs.update({"custom_string": custom_string})
+            kwargs["custom_string"] = custom_string
         return self.api_call('/app/v2/auto/run_action', json=kwargs)
 
     def run_action_list(self, *, actions: Union[dict[str, dict[str, DeviceProp]], Sequence[dict[str, dict[str, DeviceProp]]]], custom_string: Optional[str] = None, **kwargs) -> WyzeResponse:
         SV_RUN_ACTION_LIST = '5e02224ae0c64d328154737602d28833'
-
-        kwargs.update({
-            "action_list": [],
-            "sv": SV_RUN_ACTION_LIST
-        })
+        kwargs |= {"action_list": [], "sv": SV_RUN_ACTION_LIST}
         if not isinstance(actions, (list, Tuple)):
             actions = [actions]
         for action in actions:
@@ -291,7 +268,7 @@ class ApiServiceClient(BaseServiceClient):
                 "provider_key": action["provider_key"],
             })
         if custom_string is not None:
-            kwargs.update({"custom_string": custom_string})
+            kwargs["custom_string"] = custom_string
         return self.api_call('/app/v2/auto/run_action_list', json=kwargs)
 
 
@@ -333,19 +310,16 @@ class AwayModeGenerator(object):
         self.remain_time = gmt_end_time - gmt_start_time
         self.cursor_time = gmt_start_time
         z = False
-        while (True):
-            if z:
+        while True:
+            if z or self.remain_time > 900:
                 arrayList.append(self._randomize(3600, 60, gmt_end_time))
                 z = not z
-            elif (self.remain_time <= 900):
-                return arrayList
             else:
-                arrayList.append(self._randomize(3600, 60, gmt_end_time))
-                z = not z
+                return arrayList
 
     def _remove_unreasonable_data(self, arrayList: list[float], local_end: datetime):
         if arrayList is not None and len(arrayList) >= 2:
-            last_data = arrayList[len(arrayList) - 1] + self._local_timezone_in_seconds
+            last_data = arrayList[-1] + self._local_timezone_in_seconds
             self._logger.debug(f"remove_unreasonable_data last_data={last_data} local_end={local_end}")
             if last_data > local_end.timestamp():
                 self._logger.debug(f"remove_unreasonable_data item {arrayList[len(arrayList) + -1]}")
@@ -354,7 +328,7 @@ class AwayModeGenerator(object):
 
     @property
     def _local_timezone_in_seconds(self) -> int:
-        return (datetime.now() - datetime.utcnow()).total_seconds()
+        return (datetime.now() - datetime.now(timezone.utc)).total_seconds()
 
     def _randomize(self, seconds_per_hour: float, seconds_per_minute: float, end_time: float) -> int:
         import random

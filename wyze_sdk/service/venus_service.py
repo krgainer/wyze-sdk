@@ -44,19 +44,19 @@ class VenusServiceClient(ExServiceClient):
         )
 
     def get_maps(self, *, did: str, **kwargs) -> WyzeResponse:
-        kwargs.update({'did': did})
+        kwargs['did'] = did
         return self.api_call('/plugin/venus/memory_map/list', http_verb="GET", params=kwargs)
 
     def get_current_position(self, *, did: str, **kwargs) -> WyzeResponse:
-        kwargs.update({'did': did})
+        kwargs['did'] = did
         return self.api_call('/plugin/venus/memory_map/current_position', http_verb="GET", params=kwargs)
 
     def get_current_map(self, *, did: str, **kwargs) -> WyzeResponse:
-        kwargs.update({'did': did})
+        kwargs['did'] = did
         return self.api_call('/plugin/venus/memory_map/current_map', http_verb="GET", params=kwargs)
 
     def set_current_map(self, *, did: str, map_id: int, **kwargs) -> WyzeResponse:
-        kwargs.update({'device_id': did, 'map_id': map_id})
+        kwargs |= {'device_id': did, 'map_id': map_id}
         return self.api_call('/plugin/venus/memory_map/current_map', http_verb="POST", json=kwargs)
 
     def get_sweep_records(self, *, did: str, keys: Union[str, Sequence[str]], limit: int = 20, since: datetime, **kwargs) -> WyzeResponse:
@@ -64,41 +64,24 @@ class VenusServiceClient(ExServiceClient):
         #     kwargs.update({"keys": ",".join(keys)})
         # else:
         #     kwargs.update({"keys": keys})
-        kwargs.update({
-            'did': did,
-            "purpose": "history_map",
-            "count": limit,
-            "last_time": datetime_to_epoch(since)
-        })
+        kwargs |= {'did': did, "purpose": "history_map", "count": limit, "last_time": datetime_to_epoch(since)}
+
         return self.api_call('/plugin/venus/sweep_record/query_data', http_verb="GET", params=kwargs)
 
     def get_iot_prop(self, *, did: str, keys: Union[str, Sequence[str]], **kwargs) -> WyzeResponse:
-        if isinstance(keys, (list, Tuple)):
-            kwargs.update({"keys": ",".join(keys)})
-        else:
-            kwargs.update({"keys": keys})
-        kwargs.update({'did': did})
+        kwargs["keys"] = ",".join(keys) if isinstance(keys, (list, Tuple)) else keys
+        kwargs['did'] = did
         return self.api_call('/plugin/venus/get_iot_prop', http_verb="GET", params=kwargs)
 
     def get_device_info(self, *, did: str, keys: Union[str, Sequence[str]], **kwargs) -> WyzeResponse:
-        if isinstance(keys, (list, Tuple)):
-            kwargs.update({"keys": ",".join(keys)})
-        else:
-            kwargs.update({"keys": keys})
-        kwargs.update({'device_id': did})
+        kwargs["keys"] = ",".join(keys) if isinstance(keys, (list, Tuple)) else keys
+        kwargs['device_id'] = did
         return self.api_call('/plugin/venus/device_info', http_verb="GET", params=kwargs)
 
     def set_iot_action(self, *, did: str, model: str, cmd: str, params: Union[dict, Sequence[dict]], is_sub_device: bool = False, **kwargs) -> WyzeResponse:
-        if isinstance(params, (list, Tuple)):
-            kwargs.update({"params": params})
-        else:
-            kwargs.update({"params": [params]})
-        kwargs.update({
-            'cmd': cmd,
-            'did': did,
-            'model': model,
-            'is_sub_device': 1 if is_sub_device else 0,
-        })
+        kwargs["params"] = params if isinstance(params, (list, Tuple)) else [params]
+        kwargs |= {'cmd': cmd, 'did': did, 'model': model, 'is_sub_device': 1 if is_sub_device else 0}
+
         return self.api_call('/plugin/venus/set_iot_action', http_verb="POST", json=kwargs)
 
     def sweep_rooms(self, *, did: str, rooms: Union[int, Sequence[int]], **kwargs) -> WyzeResponse:
@@ -109,9 +92,6 @@ class VenusServiceClient(ExServiceClient):
 
         Ref: com.wyze.sweeprobot.model.request.VenusSweepByRoomRequest
         """
-        if isinstance(rooms, (list, Tuple)):
-            kwargs.update({"rooms_id": rooms})
-        else:
-            kwargs.update({"rooms_id": [rooms]})
-        kwargs.update({'did': did, 'type': 1, 'value': 1})
+        kwargs["rooms_id"] = rooms if isinstance(rooms, (list, Tuple)) else [rooms]
+        kwargs |= {'did': did, 'type': 1, 'value': 1}
         return self.api_call('/plugin/venus/sweeping', http_verb="POST", json=kwargs)

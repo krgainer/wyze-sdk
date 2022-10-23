@@ -365,9 +365,7 @@ class Device(JsonObject):
 
     @classmethod
     def remove_model_prefix(cls, text: str, model: str) -> str:
-        if text.startswith(model):
-            return text[len(model):]
-        return text
+        return text[len(model):] if text.startswith(model) else text
 
 
 class AbstractNetworkedDevice(Device, metaclass=ABCMeta):

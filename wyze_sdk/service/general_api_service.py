@@ -46,14 +46,9 @@ class GeneralApiServiceClient(BaseServiceClient):
 
         return super()._get_headers(headers=None, has_json=True, request_specific_headers=request_specific_headers)
 
-    def api_call(
-        self,
-        api_method: str,
-        *,
-        http_verb: str = "POST",
-        json: dict = {},
-        request_specific_headers: Optional[dict] = None,
-    ) -> WyzeResponse:
+    def api_call(self, api_method: str, *, http_verb: str = "POST", json: dict = None, request_specific_headers: Optional[dict] = None) -> WyzeResponse:
+        if json is None:
+            json = {}
         json['apiKey'] = self.api_key
         json['appId'] = self.app_id
         json['appVersion'] = self.app_version
@@ -69,16 +64,5 @@ class GeneralApiServiceClient(BaseServiceClient):
 
     def post_user_event(self, *, pid: str, event_id: str, event_type: int, **kwargs):
         nonce = self.request_verifier.clock.nonce()
-        kwargs.update({
-            'eventId': event_id,
-            'eventType': event_type,
-            'logSdk': 100,
-            'logTime': nonce,
-            'nonce': str(nonce),
-            'osInfo': 'Android',
-            'osVersion': '9',
-            'pid': pid,
-            'uid': self.user_id,
-        })
-
+        kwargs |= {'eventId': event_id, 'eventType': event_type, 'logSdk': 100, 'logTime': nonce, 'nonce': str(nonce), 'osInfo': 'Android', 'osVersion': '9', 'pid': pid, 'uid': self.user_id}
         return self.api_call('/v1/user/event', json=kwargs)

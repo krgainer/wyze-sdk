@@ -87,35 +87,30 @@ class ScaleRecord(JsonObject):
         weight: float = None,
         **others: dict
     ):
-        self.id = id if id else str(self._extract_attribute('data_id', others))
-        self.age = age if age else self._extract_attribute('age', others)
-        self.bmi = bmi if bmi else self._extract_attribute('bmi', others)
-        self.bmr = bmr if bmr else self._extract_attribute('bmr', others)
-        self.body_fat = body_fat if body_fat else self._extract_attribute('body_fat', others)
-        self.body_type = body_type if body_type else self._extract_attribute('body_type', others)
-        self.body_vfr = body_vfr if body_vfr else self._extract_attribute('body_vfr', others)
-        self.body_water = body_water if body_water else self._extract_attribute('body_water', others)
-        self.bone_mineral = bone_mineral if bone_mineral else self._extract_attribute('bone_mineral', others)
-        self.device_id = device_id if device_id else self._extract_attribute('device_id', others)
-        self.family_member_id = family_member_id if family_member_id else self._extract_attribute('family_member_id', others)
-        self.gender = gender if gender else self._extract_attribute('gender', others)
-        self.height = height if height else self._extract_attribute('height', others)
-        self.impedance = impedance if impedance else [
-            self._extract_attribute('impedance1', others),
-            self._extract_attribute('impedance2', others),
-            self._extract_attribute('impedance3', others),
-            self._extract_attribute('impedance4', others),
-        ]
-        self.mac = mac if mac else self._extract_attribute('mac', others)
-        self.measure_ts = measure_ts if measure_ts else self._extract_attribute('measure_ts', others)
-        self.measure_type = measure_type if measure_type else self._extract_attribute('measure_type', others)
-        self.metabolic_age = metabolic_age if metabolic_age else self._extract_attribute('metabolic_age', others)
-        self.muscle = muscle if muscle else self._extract_attribute('muscle', others)
-        self.occupation = occupation if occupation else self._extract_attribute('occupation', others)
-        self.protein = protein if protein else self._extract_attribute('protein', others)
-        self.timezone = timezone if timezone else self._extract_attribute('timezone', others)
-        self.user_id = user_id if user_id else self._extract_attribute('user_id', others)
-        self._weight = weight if weight else self._extract_attribute('weight', others)
+        self.id = id or str(self._extract_attribute('data_id', others))
+        self.age = age or self._extract_attribute('age', others)
+        self.bmi = bmi or self._extract_attribute('bmi', others)
+        self.bmr = bmr or self._extract_attribute('bmr', others)
+        self.body_fat = body_fat or self._extract_attribute('body_fat', others)
+        self.body_type = body_type or self._extract_attribute('body_type', others)
+        self.body_vfr = body_vfr or self._extract_attribute('body_vfr', others)
+        self.body_water = body_water or self._extract_attribute('body_water', others)
+        self.bone_mineral = bone_mineral or self._extract_attribute('bone_mineral', others)
+        self.device_id = device_id or self._extract_attribute('device_id', others)
+        self.family_member_id = family_member_id or self._extract_attribute('family_member_id', others)
+        self.gender = gender or self._extract_attribute('gender', others)
+        self.height = height or self._extract_attribute('height', others)
+        self.impedance = impedance or [self._extract_attribute('impedance1', others), self._extract_attribute('impedance2', others), self._extract_attribute('impedance3', others), self._extract_attribute('impedance4', others)]
+        self.mac = mac or self._extract_attribute('mac', others)
+        self.measure_ts = measure_ts or self._extract_attribute('measure_ts', others)
+        self.measure_type = measure_type or self._extract_attribute('measure_type', others)
+        self.metabolic_age = metabolic_age or self._extract_attribute('metabolic_age', others)
+        self.muscle = muscle or self._extract_attribute('muscle', others)
+        self.occupation = occupation or self._extract_attribute('occupation', others)
+        self.protein = protein or self._extract_attribute('protein', others)
+        self.timezone = timezone or self._extract_attribute('timezone', others)
+        self.user_id = user_id or self._extract_attribute('user_id', others)
+        self._weight = weight or self._extract_attribute('weight', others)
         show_unknown_key_warning(self, others)
 
     @property
@@ -158,13 +153,13 @@ class UserGoalWeight(JsonObject):
         user_id: int = None,
         **others: dict
     ):
-        self.id = id if id else str(self._extract_attribute('id', others))
-        self.created = created if created else epoch_to_datetime(self._extract_attribute('create_time', others), ms=True)
-        self._current_weight = current_weight if current_weight else self._extract_attribute('current_weight', others)
-        self.family_member_id = family_member_id if family_member_id else self._extract_attribute('family_member_id', others)
-        self._goal_weight = goal_weight if goal_weight else self._extract_attribute('goal_weight', others)
-        self.updated = updated if updated else epoch_to_datetime(self._extract_attribute('update_time', others), ms=True)
-        self.user_id = user_id if user_id else self._extract_attribute('user_id', others)
+        self.id = id or str(self._extract_attribute('id', others))
+        self.created = created or epoch_to_datetime(self._extract_attribute('create_time', others), ms=True)
+        self._current_weight = current_weight or self._extract_attribute('current_weight', others)
+        self.family_member_id = family_member_id or self._extract_attribute('family_member_id', others)
+        self._goal_weight = goal_weight or self._extract_attribute('goal_weight', others)
+        self.updated = updated or epoch_to_datetime(self._extract_attribute('update_time', others), ms=True)
+        self.user_id = user_id or self._extract_attribute('user_id', others)
         show_unknown_key_warning(self, others)
 
     @property
@@ -206,7 +201,7 @@ class Scale(AbstractWirelessNetworkedDevice):
         **others: dict,
     ):
         super().__init__(type=self.type, **others)
-        self.unit = unit if unit else super()._extract_property(ScaleProps.unit(), others)
+        self.unit = unit or super()._extract_property(ScaleProps.unit(), others)
         self._broadcast = super()._extract_attribute('broadcast', others)
         self.goal_weight = goal_weight
         latest_records = latest_records if latest_records is not None else super()._extract_attribute('latest_records', others)

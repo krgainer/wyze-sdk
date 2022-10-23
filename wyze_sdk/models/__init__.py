@@ -16,9 +16,7 @@ def datetime_to_epoch(datetime: datetime, ms: bool = True) -> int:
     """
     Convert a python datetime to number of (milli-) seconds since epoch.
     """
-    if ms:
-        return int(datetime.timestamp() * 1000)
-    return int(datetime.timestamp())
+    return int(datetime.timestamp() * 1000) if ms else int(datetime.timestamp())
 
 
 def epoch_to_datetime(epoch: Union[int, float], ms: bool = False) -> datetime:
@@ -39,7 +37,7 @@ def str_to_time(string: Union[int, str]) -> Optional[time]:
     if len(string) != 6:
         return
 
-    return time(hour=int(string[0:2]), minute=int(string[2:4]), second=int(string[4:6]))
+    return time(hour=int(string[:2]), minute=int(string[2:4]), second=int(string[4:6]))
 
 
 def show_unknown_key_warning(name: Union[str, object], others: dict):
@@ -47,7 +45,7 @@ def show_unknown_key_warning(name: Union[str, object], others: dict):
         others.pop("type")
     if "product_type" in others:
         others.pop("product_type")
-    if len(others) > 0:
+    if others:
         keys = ", ".join(others.keys())
         logger = logging.getLogger(__name__)
         if isinstance(name, object):
@@ -123,26 +121,17 @@ class JsonObject(BaseObject, metaclass=ABCMeta):
         def to_dict_compatible(
             value: Union[dict, list, object]
         ) -> Union[dict, list, Any]:
-            if isinstance(value, list):  # skipcq: PYL-R1705
+            if isinstance(value, list):
                 return [to_dict_compatible(v) for v in value]
-            else:
-                to_dict = getattr(value, "to_dict", None)
-                if to_dict and callable(to_dict):  # skipcq: PYL-R1705
-                    return {
-                        k: to_dict_compatible(v) for k, v in value.to_dict().items()  # type: ignore
-                    }
-                else:
-                    return value
+            to_dict = getattr(value, "to_dict", None)
+            return {k: to_dict_compatible(v) for k, v in value.to_dict().items()} if to_dict and callable(to_dict) else value  # type: ignore
 
         def is_not_empty(self, key: str) -> bool:
             value = getattr(self, key, None)
             if value is None:
                 return False
             has_len = getattr(value, "__len__", None) is not None
-            if has_len:  # skipcq: PYL-R1705
-                return len(value) > 0
-            else:
-                return value is not None
+            return len(value) > 0 if has_len else value is not None
 
         return {
             key: to_dict_compatible(getattr(self, key, None))
@@ -164,8 +153,7 @@ class JsonObject(BaseObject, metaclass=ABCMeta):
         return self.get_non_null_attributes()
 
     def __repr__(self):
-        dict_value = self.get_non_null_attributes()
-        if dict_value:  # skipcq: PYL-R1705
+        if dict_value := self.get_non_null_attributes():
             return f"<wyze_sdk.{self.__class__.__name__}: {dict_value}>"
         else:
             return self.__str__()
@@ -234,9 +222,9 @@ class PropDef(object):
         if not isinstance(value, self._type):
             try:
                 value = bool(distutils.util.strtobool(str(value))) if self._type == bool else self._type(value)
-            except TypeError:
+            except TypeError as e:
                 logging.debug(f"could not cast value {value} into expected type {self._type}")
-                raise WyzeRequestError(f"{value} must be of type {self._type}")
+                raise WyzeRequestError(f"{value} must be of type {self._type}") from e
 
         if self._acceptable_values is None:
             logging.debug("acceptable_values is not set, passing")

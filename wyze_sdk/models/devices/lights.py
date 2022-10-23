@@ -65,7 +65,7 @@ class LightProps(object):
 
     @classmethod
     def brightness(cls) -> PropDef:
-        return PropDef("P1501", int, acceptable_values=range(0, 100 + 1))
+        return PropDef("P1501", int, acceptable_values=range(100 + 1))
 
     @classmethod
     def color_temp(cls) -> PropDef:

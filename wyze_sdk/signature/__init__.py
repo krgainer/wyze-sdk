@@ -47,8 +47,7 @@ class RequestVerifier:
         format_req = str.encode(f"{body}")
         encoded_secret = str.encode(self.signing_secret)
         request_hash = hmac.new(encoded_secret, format_req, hashlib.md5).hexdigest()
-        calculated_signature = f"{request_hash}"
-        return calculated_signature
+        return f"{request_hash}"
 
     def generate_dynamic_signature(
         self, *, timestamp: str, body: Union[str, bytes]
@@ -64,8 +63,7 @@ class RequestVerifier:
         format_req = str.encode(f"{body}")
         encoded_secret = str.encode(self.md5_string(f"{self.access_token}{self.signing_secret}"))
         request_hash = hmac.new(encoded_secret, format_req, hashlib.md5).hexdigest()
-        calculated_signature = f"{request_hash}"
-        return calculated_signature
+        return f"{request_hash}"
 
 
 class MD5Hasher:
